@@ -1,0 +1,2 @@
+"""Market sentiment barometer application."""
+

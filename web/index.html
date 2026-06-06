@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Global Market Sentiment Barometer</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">IM</span>
+          <div>
+            <strong>Market Barometer</strong>
+            <span>Polymarket / Kalshi</span>
+          </div>
+        </div>
+        <nav class="nav-list" aria-label="Dashboard sections">
+          <a href="#overview" class="active">总览</a>
+          <a href="#factors">宏观因子</a>
+          <a href="#assets">资产影响</a>
+          <a href="#events">事件雷达</a>
+        </nav>
+        <div class="source-panel">
+          <span class="source-dot" id="sourceDot"></span>
+          <div>
+            <strong id="sourceMode">Loading</strong>
+            <span id="lastUpdate">等待数据</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>全球投资市场情绪晴雨表</h1>
+            <p>把预测市场概率转成宏观因子、资产影响和事件冲击信号。</p>
+          </div>
+          <button id="refreshButton" type="button" class="primary-button">
+            <span class="button-icon">↻</span>
+            刷新数据
+          </button>
+        </header>
+
+        <section id="overview" class="metrics-grid" aria-label="Overview metrics">
+          <article class="metric">
+            <span>追踪市场</span>
+            <strong id="marketCount">--</strong>
+          </article>
+          <article class="metric">
+            <span>数据平台</span>
+            <strong id="platformCount">--</strong>
+          </article>
+          <article class="metric">
+            <span>平均置信度</span>
+            <strong id="confidenceAverage">--</strong>
+          </article>
+          <article class="metric warning">
+            <span>风险状态</span>
+            <strong id="riskState">--</strong>
+          </article>
+        </section>
+
+        <section id="factors" class="section-band">
+          <div class="section-heading">
+            <h2>宏观因子</h2>
+            <div class="segmented" role="tablist" aria-label="Factor view">
+              <button class="active" type="button" data-factor-mode="score">强度</button>
+              <button type="button" data-factor-mode="momentum">24h</button>
+            </div>
+          </div>
+          <div id="factorGrid" class="factor-grid"></div>
+        </section>
+
+        <section id="assets" class="section-band">
+          <div class="section-heading">
+            <h2>资产和行业影响</h2>
+            <span class="subtle">正值偏利好，负值偏利空</span>
+          </div>
+          <div class="asset-layout">
+            <div id="assetList" class="asset-list"></div>
+            <div class="heatmap-wrap">
+              <div class="heatmap-header">因子影响矩阵</div>
+              <div id="heatmap" class="heatmap"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="events" class="section-band">
+          <div class="section-heading">
+            <h2>事件雷达</h2>
+            <div class="toolbar">
+              <label>
+                <span>分类</span>
+                <select id="categoryFilter">
+                  <option value="all">全部</option>
+                </select>
+              </label>
+              <label>
+                <span>平台</span>
+                <select id="platformFilter">
+                  <option value="all">全部</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div id="errorBanner" class="error-banner" hidden></div>
+          <div class="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>事件</th>
+                  <th>平台</th>
+                  <th>分类</th>
+                  <th>概率</th>
+                  <th>24h</th>
+                  <th>置信度</th>
+                  <th>成交量</th>
+                </tr>
+              </thead>
+              <tbody id="eventRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
+
