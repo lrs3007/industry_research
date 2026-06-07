@@ -1,0 +1,4 @@
+interface:
+  display_name: "Industry Stock Selection"
+  short_description: "Prediction-market industry stock research"
+  default_prompt: "Use $industry-stock-selection to rank industry stock research priorities from current prediction-market signals."
