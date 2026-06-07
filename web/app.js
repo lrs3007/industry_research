@@ -15,12 +15,23 @@ const els = {
   confidenceAverage: document.querySelector("#confidenceAverage"),
   riskState: document.querySelector("#riskState"),
   factorGrid: document.querySelector("#factorGrid"),
+  macroRefreshButton: document.querySelector("#macroRefreshButton"),
+  macroStatus: document.querySelector("#macroStatus"),
+  macroSummary: document.querySelector("#macroSummary"),
+  macroGroups: document.querySelector("#macroGroups"),
   assetList: document.querySelector("#assetList"),
   heatmap: document.querySelector("#heatmap"),
   eventRows: document.querySelector("#eventRows"),
   categoryFilter: document.querySelector("#categoryFilter"),
   platformFilter: document.querySelector("#platformFilter"),
   errorBanner: document.querySelector("#errorBanner"),
+};
+
+const PLATFORM_LABELS = {
+  demo: "演示数据",
+  test: "测试数据",
+  polymarket: "Polymarket",
+  kalshi: "Kalshi",
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -37,6 +48,7 @@ function bindEvents() {
       renderFactors();
     });
   });
+  els.macroRefreshButton.addEventListener("click", () => refreshMacroDashboard());
   els.categoryFilter.addEventListener("change", () => {
     state.category = els.categoryFilter.value;
     renderEvents();
@@ -66,6 +78,20 @@ async function refreshDashboard() {
   }
 }
 
+async function refreshMacroDashboard() {
+  els.macroRefreshButton.disabled = true;
+  els.macroRefreshButton.innerHTML = '<span class="button-icon">↻</span>刷新中';
+  els.macroStatus.textContent = "正在采集免费数据源";
+  try {
+    const payload = await requestJson("/api/macro/refresh");
+    state.payload.macroDashboard = payload.macroDashboard;
+    renderMacroDashboard();
+  } finally {
+    els.macroRefreshButton.disabled = false;
+    els.macroRefreshButton.innerHTML = '<span class="button-icon">↻</span>刷新宏观数据';
+  }
+}
+
 async function requestJson(path) {
   const response = await fetch(path);
   if (!response.ok) {
@@ -80,6 +106,7 @@ function render() {
   renderSummary();
   renderFilters();
   renderFactors();
+  renderMacroDashboard();
   renderAssets();
   renderHeatmap();
   renderEvents();
@@ -89,11 +116,11 @@ function renderSource() {
   const payload = state.payload;
   const isDemo = payload.status === "demo";
   els.sourceDot.className = `source-dot ${isDemo ? "demo" : "live"}`;
-  els.sourceMode.textContent = isDemo ? "Demo fallback" : "Live data";
+  els.sourceMode.textContent = isDemo ? "演示数据" : "实时数据";
   els.lastUpdate.textContent = payload.generatedAt ? formatDate(payload.generatedAt) : "未采集";
   if (payload.errors && payload.errors.length) {
     els.errorBanner.hidden = false;
-    els.errorBanner.textContent = payload.errors.join(" | ");
+    els.errorBanner.textContent = payload.errors.map(translateErrorMessage).join(" | ");
   } else {
     els.errorBanner.hidden = true;
     els.errorBanner.textContent = "";
@@ -117,7 +144,7 @@ function renderFilters() {
   const categories = unique(events.map((item) => item.categoryLabel));
   const platforms = unique(events.map((item) => item.platform));
   fillSelect(els.categoryFilter, categories, state.category);
-  fillSelect(els.platformFilter, platforms, state.platform);
+  fillSelect(els.platformFilter, platforms, state.platform, platformLabel);
 }
 
 function renderFactors() {
@@ -145,6 +172,110 @@ function renderFactors() {
       `;
     })
     .join("");
+}
+
+function renderMacroDashboard() {
+  const dashboard = state.payload.macroDashboard;
+  if (!dashboard) return;
+
+  els.macroStatus.textContent = dashboard.fetchedAt ? `${dashboard.status}：${formatDate(dashboard.fetchedAt)}` : dashboard.status || "待刷新宏观数据";
+  els.macroSummary.innerHTML = [
+    ["指标组", formatInteger(dashboard.summary.groupCount)],
+    ["指标项", formatInteger(dashboard.summary.indicatorCount)],
+    ["已接入", formatInteger(dashboard.summary.connectedCount)],
+    ["频率", dashboard.summary.frequencyMix.join(" / ")],
+  ]
+    .map(
+      ([label, value]) => `
+        <article class="macro-stat">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </article>
+      `
+    )
+    .join("");
+
+  els.macroGroups.innerHTML = dashboard.groups
+    .map(
+      (group) => `
+        <section class="macro-group">
+          <div class="macro-group-head">
+            <h3>${escapeHtml(group.label)}</h3>
+            <p>${escapeHtml(group.description)}</p>
+          </div>
+          <div class="macro-indicators">
+            ${group.indicators.map(renderMacroIndicator).join("")}
+          </div>
+        </section>
+      `
+    )
+    .join("");
+}
+
+function renderMacroIndicator(indicator) {
+  const current = indicator.current;
+  const status = indicator.status || "";
+  const statusTone = status === "采集失败" ? "bad" : status === "部分接入" || status.includes("偏旧") || status.includes("替代") ? "warn" : status.startsWith("已接入") ? "good" : "neutral";
+  return `
+    <article class="macro-card">
+      <div class="macro-card-top">
+        <strong>${escapeHtml(indicator.name)}</strong>
+        <span class="${statusTone}">${escapeHtml(status)}</span>
+      </div>
+      ${current ? renderMacroCurrent(current) : renderMacroEmpty(indicator)}
+      <dl>
+        <div>
+          <dt>频率</dt>
+          <dd>${escapeHtml(indicator.frequency)}</dd>
+        </div>
+        <div>
+          <dt>来源</dt>
+          <dd>${escapeHtml(indicator.source)}</dd>
+        </div>
+        <div>
+          <dt>观察口径</dt>
+          <dd>${escapeHtml(indicator.watch)}</dd>
+        </div>
+        <div>
+          <dt>信号用途</dt>
+          <dd>${escapeHtml(indicator.signal)}</dd>
+        </div>
+        <div>
+          <dt>关联资产</dt>
+          <dd>${escapeHtml(indicator.related)}</dd>
+        </div>
+        <div>
+          <dt>接口</dt>
+          <dd>${escapeHtml(indicator.sourceApi || "待配置")}</dd>
+        </div>
+      </dl>
+    </article>
+  `;
+}
+
+function renderMacroCurrent(current) {
+  const change = current.changeText ? `<small>${escapeHtml(current.changeLabel || "参考")}: ${escapeHtml(current.changeText)}</small>` : "";
+  const note = current.note ? `<small>${escapeHtml(current.note)}</small>` : "";
+  return `
+    <div class="macro-current">
+      <span>${escapeHtml(current.valueLabel || "最新值")}</span>
+      <strong>${escapeHtml(current.valueText || "--")}</strong>
+      <small>${escapeHtml(current.period || "最新期")}</small>
+      ${change}
+      ${note}
+    </div>
+  `;
+}
+
+function renderMacroEmpty(indicator) {
+  const message = indicator.error || "点击刷新宏观数据后采集";
+  return `
+    <div class="macro-current empty">
+      <span>最新值</span>
+      <strong>--</strong>
+      <small>${escapeHtml(message)}</small>
+    </div>
+  `;
 }
 
 function renderAssets() {
@@ -191,11 +322,12 @@ function renderEvents() {
 
   els.eventRows.innerHTML = rows
     .map((event) => {
-      const title = event.url ? `<a class="event-title" href="${event.url}" target="_blank" rel="noreferrer">${escapeHtml(event.title)}</a>` : `<span class="event-title">${escapeHtml(event.title)}</span>`;
+      const displayTitle = event.titleZh || event.title;
+      const title = event.url ? `<a class="event-title" href="${event.url}" target="_blank" rel="noreferrer">${escapeHtml(displayTitle)}</a>` : `<span class="event-title">${escapeHtml(displayTitle)}</span>`;
       return `
         <tr>
           <td>${title}</td>
-          <td><span class="platform-pill">${escapeHtml(event.platform)}</span></td>
+          <td><span class="platform-pill">${escapeHtml(event.platformLabel || platformLabel(event.platform))}</span></td>
           <td>${escapeHtml(event.categoryLabel)}</td>
           <td class="number">${formatPercent(event.probability)}</td>
           <td class="number ${event.change24h >= 0 ? "positive" : "negative"}">${formatSignedPercent(event.change24h)}</td>
@@ -207,10 +339,10 @@ function renderEvents() {
     .join("");
 }
 
-function fillSelect(select, values, current) {
+function fillSelect(select, values, current, labelFormatter = (value) => value) {
   const valueSet = new Set(["all", ...values]);
   const nextValue = valueSet.has(current) ? current : "all";
-  select.innerHTML = `<option value="all">全部</option>${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
+  select.innerHTML = `<option value="all">全部</option>${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(labelFormatter(value))}</option>`).join("")}`;
   select.value = nextValue;
   if (select === els.categoryFilter) state.category = nextValue;
   if (select === els.platformFilter) state.platform = nextValue;
@@ -218,6 +350,19 @@ function fillSelect(select, values, current) {
 
 function unique(values) {
   return Array.from(new Set(values)).sort();
+}
+
+function platformLabel(value) {
+  return PLATFORM_LABELS[value] || value;
+}
+
+function translateErrorMessage(message) {
+  return String(message)
+    .replaceAll("No live markets were collected; using latest local snapshots.", "未采集到实时市场，正在使用最近一次本地快照。")
+    .replaceAll("No live markets were collected; using demo dataset.", "未采集到实时市场，正在使用演示数据集。")
+    .replaceAll("polymarket:", "Polymarket 采集失败：")
+    .replaceAll("kalshi:", "Kalshi 采集失败：")
+    .replaceAll("Could not fetch", "无法获取");
 }
 
 function heatColor(score) {
@@ -269,4 +414,3 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
-

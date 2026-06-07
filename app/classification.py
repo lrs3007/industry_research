@@ -13,7 +13,7 @@ CATEGORY_LABELS: dict[str, str] = {
     "geopolitics": "地缘风险",
     "energy": "能源",
     "tech": "科技监管",
-    "crypto": "Crypto",
+    "crypto": "加密资产",
     "markets": "市场价格",
     "other": "其他",
 }
@@ -128,7 +128,7 @@ FACTOR_LABELS: dict[str, str] = {
     "energy_shock": "能源冲击",
     "policy_uncertainty": "政策不确定性",
     "tech_regulation": "科技监管压力",
-    "crypto_sentiment": "Crypto 情绪",
+    "crypto_sentiment": "加密资产情绪",
 }
 
 
@@ -187,7 +187,7 @@ ASSET_WEIGHTS: dict[str, dict[str, float]] = {
         "energy_shock": -0.25,
         "policy_uncertainty": -0.35,
     },
-    "纳斯达克/AI": {
+    "纳斯达克/人工智能": {
         "risk_appetite": 1.0,
         "fed_hawkishness": -0.85,
         "tech_regulation": -0.9,
@@ -243,7 +243,7 @@ ASSET_WEIGHTS: dict[str, dict[str, float]] = {
         "inflation_risk": 0.2,
         "risk_appetite": 0.35,
     },
-    "Crypto": {
+    "加密资产": {
         "crypto_sentiment": 1.0,
         "risk_appetite": 0.45,
         "fed_hawkishness": -0.5,

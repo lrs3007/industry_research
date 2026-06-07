@@ -10,6 +10,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from app.collectors import collect_all
+from app.localization import translate_error_message
+from app.macro import macro_dashboard_payload
 from app.sample_data import demo_markets
 from app.scoring import dashboard_payload
 from app.store import DEFAULT_DB_PATH, attach_history_changes, connect, latest_snapshots, save_snapshots
@@ -40,6 +42,10 @@ class SentimentHandler(BaseHTTPRequestHandler):
             self._json(refresh_payload(self.db_path, limit=limit), head_only=head_only)
         elif parsed.path == "/api/dashboard":
             self._json(current_payload(self.db_path), head_only=head_only)
+        elif parsed.path == "/api/macro":
+            self._json({"macroDashboard": macro_dashboard_payload()}, head_only=head_only)
+        elif parsed.path == "/api/macro/refresh":
+            self._json({"macroDashboard": macro_dashboard_payload(refresh=True)}, head_only=head_only)
         else:
             self._static(parsed.path, head_only=head_only)
 
@@ -76,12 +82,13 @@ def refresh_payload(db_path: Path, limit: int = 120) -> dict[str, object]:
             snapshots = attach_history_changes(connection, snapshots)
         else:
             snapshots = latest_snapshots(connection)
-            errors.append("No live markets were collected; using latest local snapshots." if snapshots else "No live markets were collected; using demo dataset.")
+            fallback_message = "No live markets were collected; using latest local snapshots." if snapshots else "No live markets were collected; using demo dataset."
+            errors.append(translate_error_message(fallback_message))
             if snapshots:
                 snapshots = attach_history_changes(connection, snapshots)
     if not snapshots:
         snapshots = demo_markets()
-    payload = dashboard_payload(snapshots, errors=errors)
+    payload = dashboard_payload(snapshots, errors=[translate_error_message(item) for item in errors])
     payload["refreshed"] = True
     payload["savedSnapshots"] = len(snapshots) if payload["status"] == "live" else 0
     return payload

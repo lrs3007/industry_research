@@ -3,29 +3,30 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Global Market Sentiment Barometer</title>
+    <title>全球投资市场情绪晴雨表</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
-          <span class="brand-mark">IM</span>
+          <span class="brand-mark">晴</span>
           <div>
-            <strong>Market Barometer</strong>
-            <span>Polymarket / Kalshi</span>
+            <strong>投资情绪晴雨表</strong>
+            <span>预测市场数据</span>
           </div>
         </div>
-        <nav class="nav-list" aria-label="Dashboard sections">
+        <nav class="nav-list" aria-label="页面分区">
           <a href="#overview" class="active">总览</a>
           <a href="#factors">宏观因子</a>
+          <a href="#macro">宏观数据</a>
           <a href="#assets">资产影响</a>
           <a href="#events">事件雷达</a>
         </nav>
         <div class="source-panel">
           <span class="source-dot" id="sourceDot"></span>
           <div>
-            <strong id="sourceMode">Loading</strong>
+            <strong id="sourceMode">加载中</strong>
             <span id="lastUpdate">等待数据</span>
           </div>
         </div>
@@ -43,7 +44,7 @@
           </button>
         </header>
 
-        <section id="overview" class="metrics-grid" aria-label="Overview metrics">
+        <section id="overview" class="metrics-grid" aria-label="总览指标">
           <article class="metric">
             <span>追踪市场</span>
             <strong id="marketCount">--</strong>
@@ -65,12 +66,30 @@
         <section id="factors" class="section-band">
           <div class="section-heading">
             <h2>宏观因子</h2>
-            <div class="segmented" role="tablist" aria-label="Factor view">
+            <div class="segmented" role="tablist" aria-label="因子视图">
               <button class="active" type="button" data-factor-mode="score">强度</button>
-              <button type="button" data-factor-mode="momentum">24h</button>
+              <button type="button" data-factor-mode="momentum">24小时</button>
             </div>
           </div>
           <div id="factorGrid" class="factor-grid"></div>
+        </section>
+
+        <section id="macro" class="section-band">
+          <div class="section-heading">
+            <div>
+              <h2>宏观经济数据看板</h2>
+              <p class="section-note">免费数据源优先使用 AKShare，官方源用于后续校验；上游失败不影响主页面。</p>
+            </div>
+            <div class="macro-actions">
+              <span id="macroStatus" class="status-pill">待刷新宏观数据</span>
+              <button id="macroRefreshButton" type="button" class="secondary-button">
+                <span class="button-icon">↻</span>
+                刷新宏观数据
+              </button>
+            </div>
+          </div>
+          <div id="macroSummary" class="macro-summary"></div>
+          <div id="macroGroups" class="macro-groups"></div>
         </section>
 
         <section id="assets" class="section-band">
@@ -114,7 +133,7 @@
                   <th>平台</th>
                   <th>分类</th>
                   <th>概率</th>
-                  <th>24h</th>
+                  <th>24小时</th>
                   <th>置信度</th>
                   <th>成交量</th>
                 </tr>
@@ -129,4 +148,3 @@
     <script src="/app.js"></script>
   </body>
 </html>
-

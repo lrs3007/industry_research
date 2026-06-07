@@ -4,7 +4,9 @@ import math
 from collections import defaultdict
 from statistics import mean
 
-from app.classification import ASSET_WEIGHTS, FACTOR_LABELS, FACTOR_WEIGHTS, CATEGORY_LABELS, directional_sign, is_investment_relevant
+from app.classification import ASSET_WEIGHTS, CATEGORY_LABELS, FACTOR_LABELS, FACTOR_WEIGHTS, directional_sign, is_investment_relevant
+from app.localization import platform_label, translate_market_title
+from app.macro import macro_dashboard_payload
 from app.models import AssetImpact, FactorScore, MarketSnapshot
 
 
@@ -126,6 +128,7 @@ def dashboard_payload(snapshots: list[MarketSnapshot], errors: list[str] | None 
         "topEvents": [_snapshot_to_dict(item) for item in ranked[:24]],
         "divergences": detect_divergences(snapshots),
         "heatmap": _heatmap(factors),
+        "macroDashboard": macro_dashboard_payload(),
     }
 
 
@@ -157,9 +160,11 @@ def _asset_to_dict(item: AssetImpact) -> dict[str, object]:
 def _snapshot_to_dict(item: MarketSnapshot) -> dict[str, object]:
     return {
         "platform": item.platform,
+        "platformLabel": platform_label(item.platform),
         "marketId": item.market_id,
         "eventId": item.event_id,
         "title": item.title,
+        "titleZh": translate_market_title(item.title),
         "url": item.url,
         "category": item.category,
         "categoryLabel": CATEGORY_LABELS.get(item.category, item.category),
@@ -202,17 +207,17 @@ def _heatmap(factors: list[FactorScore]) -> list[dict[str, object]]:
 def _contributors_for_asset(asset: str, top_by_category: dict[str, list[MarketSnapshot]]) -> list[str]:
     if asset in {"原油", "能源股"}:
         categories = ("energy", "geopolitics", "inflation")
-    elif asset in {"纳斯达克/AI"}:
+    elif asset in {"纳斯达克/人工智能"}:
         categories = ("tech", "rates", "inflation", "crypto")
     elif asset in {"美元", "美债长端", "黄金"}:
         categories = ("rates", "inflation", "geopolitics")
-    elif asset == "Crypto":
+    elif asset == "加密资产":
         categories = ("crypto", "rates", "policy")
     else:
         categories = ("growth", "politics", "geopolitics", "rates")
     contributors: list[str] = []
     for category in categories:
-        contributors.extend(item.title for item in top_by_category.get(category, []))
+        contributors.extend(translate_market_title(item.title) for item in top_by_category.get(category, []))
     return contributors[:3]
 
 

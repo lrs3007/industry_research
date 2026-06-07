@@ -61,6 +61,16 @@ class ScoringTests(unittest.TestCase):
         self.assertGreater(len(payload["factors"]), 0)
         self.assertGreater(len(payload["assetImpacts"]), 0)
         self.assertGreater(len(payload["topEvents"]), 0)
+        self.assertEqual(payload["topEvents"][0]["platformLabel"], "测试数据")
+        self.assertIn("吗？", payload["topEvents"][0]["titleZh"])
+        self.assertEqual(payload["macroDashboard"]["summary"]["indicatorCount"], 18)
+        macro_names = {
+            item["name"]
+            for group in payload["macroDashboard"]["groups"]
+            for item in group["indicators"]
+        }
+        self.assertIn("GDP", macro_names)
+        self.assertIn("地产销售数据", macro_names)
 
     def test_asset_impacts_are_bounded(self) -> None:
         snapshots = [
